@@ -1,90 +1,64 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+from fastapi import FastAPI, UploadFile, File
+import json
+from PIL import Image
+from io import BytesIO
+import numpy as np
 
 from model import get_model
 
-import torch as T
-import torch.nn.functional as F
-from torchvision.transforms import v2
-from fastapi import FastAPI, UploadFile, File
+app = FastAPI()
 
+IMAGE_WIDTH = 224
+IMAGE_HEIGHT = 224
 
-import json
-import numpy as np
-from PIL import Image
-from io import BytesIO
-
-MODEL_IMAGE_WIDTH = 224
-MODEL_IMAGE_HEIGHT = 224
-
-transform = v2.Compose([
-    v2.Resize((MODEL_IMAGE_HEIGHT, MODEL_IMAGE_WIDTH)),
-    v2.ToTensor()
-])
+MODEL_WEIGHT_PATH = 'vgg_face_weights2.h5'
+model = get_model(
+		image_shape = (IMAGE_WIDTH, IMAGE_HEIGHT, 3),
+		num_classes = 6,
+		model_weights = MODEL_WEIGHT_PATH
+	)
+print(model.summary())
+print("Model Loaded Successfully")
 
 ######### Utilities #########
 def load_image(image_data):
-    image = Image.open(BytesIO(image_data))
-    return image
+	image = Image.open(BytesIO(image_data))
+	return image
 
 def preprocess(image):
-    image = image.resize((MODEL_IMAGE_WIDTH, MODEL_IMAGE_HEIGHT))
-    image = transform(image)
-    
-    return image
+	image = image.resize((IMAGE_WIDTH, IMAGE_HEIGHT))
 
-def get_prediction(image, model):
-    image = T.from_numpy(np.array(image))
-    print("image shape: ", image.shape)
-    
-    image = image.unsqueeze(0)
-    # image = image.permute(0, 3, 1, 2)
-    print("batch size shape: ", image.shape)
+	image = np.array(image)
+	image = np.expand_dims(image, axis=0) / 255.
 
-    pred_probs = model(image)
-    pred_probs = F.softmax(pred_probs, dim=-1)
-    pred_probs = pred_probs.detach().numpy()[0]
-    label = np.argmax(pred_probs, axis=-1)
+	return image
 
-    return {
-        'pred_probs': pred_probs.tolist(),
-        'label': int(label)
-    }
+def get_prediction(image):
+	probs = model.predict(image)[0]
+	label = np.argmax(probs)
 
-####################################
-
-############## Backend #############
-app = FastAPI()
-model = T.jit.load('model_script.pt')
+	return {
+		'pred_probs': probs.tolist(),
+		'label': int(label)
+	}
 
 @app.get("/")
 def foo():
-    return {
-        "status": "Face Expression Classifier"
-    }
+	return {
+		"status": "Face Expression Classifier"
+	}
 
-@app.post("/")
-def bar():
-    return {
-        "status": "Response"
-    }
 
 @app.post("/get_prediction")
 async def predict(face_img: UploadFile = File(...)):
-    image = load_image(await face_img.read())
+	image = load_image(await face_img.read())
 
-    image = preprocess(image)
+	image = preprocess(image)
+	result = get_prediction(image)
 
-    result = get_prediction(image, model)
-    print("Model Predicted: \n", result)
-
-    return {
-        'result': json.dumps(result)
-    }
-
-@app.post("/test")
-def test():
-    return {
-        'result': {
-            'pred_probs': [0.5, 0.2, 0.1],
-            'label': 0
-        }
-    }
+	return {
+		"result": json.dumps(result)
+	}

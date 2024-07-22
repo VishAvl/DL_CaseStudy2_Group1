@@ -1,47 +1,39 @@
-import torch as T
-from torch import nn, optim
-import torch.nn.functional as F
-import torchvision.models as models
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from typing import Union, List
+import keras
+from keras.layers import Input, Dropout, Dense
+from keras.models import Model
+from keras_vggface.vggface import VGGFace
 
-def get_model(num_classes:int, unfreeze_layers:Union[None, List[int]] = None, drop_rate: Union[None, float] = None):
-
-    model = models.efficientnet_b7(weights=models.EfficientNet_B7_Weights.DEFAULT)
-
-    for param in model.parameters():
-        param.requires_grad = False
-
-
-    if unfreeze_layers is not None and len(unfreeze_layers) > 0:
-        # Now unfreeze the layers in the unfreeze layer/ list
-        for layer_num in unfreeze_layers:
-            for name, child in model.features[layer_num].named_modules():
-                if not isinstance(child, nn.BatchNorm2d) and \
-                    not isinstance(child, nn.Sequential) and \
-                    not hasattr(child, 'block'):
-
-                    for param in child.parameters():
-
-                        param.requires_grad = True
-
- 
-
-    if drop_rate is not None:
-        model.classifier[0] = nn.Dropout(drop_rate)
-
- 
-
-    # Chagne the classifier head as per our need
-
-    model.classifier[1] = nn.Linear(2560, num_classes)
-
+def get_model(image_shape, num_classes, model_weights, unfreeze_layers=-3, drop_rate=0.5):
+    
+    input_layer = Input(shape=image_shape)
+    vgg_base_model = VGGFace(include_top = False, input_shape = image_shape, pooling='avg')
+    
+    # Freeze all the layers till unfreeze layers
+    for layer in vgg_base_model.layers[:unfreeze_layers]:
+        layer.trainable = False
+    
+    for layer in vgg_base_model.layers[unfreeze_layers:]:
+        layer.trainable = True
+    
+    x = vgg_base_model(input_layer)
+    
+    x = Dropout(drop_rate)(x)
+    output = Dense(num_classes, activation='softmax')(x)
+    
+    model = Model(inputs=[input_layer], outputs=[output], name="Expression_Classifier")
+    model.load_weights(model_weights)
     return model
 
-if __name__ == "__main__":
-    # model = get_model(6, [-1], 0.1)
-    # script = T.jit.script(model)
-    # script.save("model_script.pt")
 
-    model = T.jit.load('model_script.pt')
-    print("Model Loaded Succesfully")
+if __name__ == "__main__":
+	model_path = "vgg_face_weights2.h5"
+	model = get_model(
+			image_shape = (224, 224, 3),
+			num_classes = 6,
+			model_weights = model_path
+		)
+
+	print(model.summary())

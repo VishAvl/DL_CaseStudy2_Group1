@@ -23,15 +23,17 @@ if img_file_buffer is not None:
         'face_img': BytesIO(img_bytes)
     }
 
-    URL = "https://gruhit-patel-face-expression-classifier.hf.space/get_prediction"
+    URL = "http://127.0.0.1:3000/get_prediction"
 
     with st.spinner("Waiting for model response"):
         resp = requests.post(URL, files=files)
 
         if resp._content is not None:
             resp_data = json.loads(resp._content.decode('utf-8'))
-            
+            st.write(resp_data)
             result = json.loads(resp_data['result'])
+            st.write(result)
+
             label = result['label']
             confidense = result['pred_probs'][label]
             
