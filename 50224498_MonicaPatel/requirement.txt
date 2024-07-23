@@ -1,0 +1,6 @@
+numpy==1.21.6
+tensorflow==2.11.0
+python-multipart
+pillow
+fastapi
+uvicorn[standard]
