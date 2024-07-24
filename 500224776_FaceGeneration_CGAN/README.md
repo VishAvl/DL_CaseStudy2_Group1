@@ -4,6 +4,5 @@ cGAN is trained to generate images on bases of face expression of ['Ahegao', 'An
 
 [Frontend](https://facegenerator.streamlit.app/)
 
-[Video]
-https://github.com/user-attachments/assets/95c55a56-7079-45a4-a2c0-c84c51b5cd3e
+[FaceGeneration_video.mp4](https://github.com/user-attachments/assets/95c55a56-7079-45a4-a2c0-c84c51b5cd3e)
 
