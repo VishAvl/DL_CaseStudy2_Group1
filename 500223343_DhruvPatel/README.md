@@ -12,7 +12,6 @@ This repository contains the implementation of a face expression classification 
 - [Evaluation](#evaluation)
 - [Saving the Model](#saving-the-model)
 - [Results](#results)
-- [License](#license)
 
 ## Dataset
 
@@ -28,11 +27,7 @@ The model architecture:
 - Base Model: VGG19 (pretrained, with top layers removed)
 - Global Average Pooling Layer
 - Dense Layer (1024 units, ReLU activation)
-- Batch Normalization
-- Dropout (0.5)
-- Dense Layer (512 units, ReLU activation)
-- Batch Normalization
-- Dropout (0.5)
+- Dropout (0.2)
 - Output Layer (6 units, Softmax activation)
 
 ## Installation
@@ -77,10 +72,8 @@ The entire model, including the architecture, weights, and optimizer state, is s
 - The model is evaluated on validation data, and the confusion matrix and ROC-AUC curves are plotted.
 - The training time and accuracy are also printed.
 
-## License
+# [Frontend](https://faceexpression-classifier-hkquamyltpzbqmfuhkdjkt.streamlit.app/)
 
-This project is licensed under the MIT License.
 
----
+[video](https://github.com/user-attachments/assets/45bcfd28-61e7-41c8-a7f7-12f6e7b42ffc)
 
-Feel free to customize the `README.md` file as per your requirements.
